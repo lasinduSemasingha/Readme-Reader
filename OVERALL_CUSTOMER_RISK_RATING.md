@@ -10,6 +10,50 @@ for Customer Risk Assessment in AMLFinOps.
 
 ---
 
+## Plain-language summary (for non-IT readers)
+
+This is how the system decides a customer's overall risk:
+
+1. The officer selects 7 customer attributes:
+  - Location
+  - Type of Product
+  - Business/Occupation
+  - Source of Funds
+  - Anticipated Transaction Volume
+  - Customer Type
+  - Payment Mode
+2. For each selected attribute, the system reads a predefined **Risk Rating** and **Risk Score** from master setup tables.
+3. The system adds all 7 scores to get one **Total Risk Score**.
+4. The total score is matched to a predefined row in the **Risk Tolerance table**.
+5. That matched row gives:
+  - **Overall Customer Risk Rating** (for example Low / Medium / High)
+  - **Overall Customer Risk Tolerance**
+
+### How customers are categorized
+
+- Customers are categorized by the **final mapped rating** from the Risk Tolerance table.
+- In other words, the category is not hardcoded in this calculation file; it depends on the score-to-rating setup maintained in `Tbl_Mas_RiskTolerance`.
+
+### Special rule: PEP customers
+
+If customer is treated as PEP in this workflow, the system forces:
+
+- Overall Customer Risk Score = **21**
+- Overall Customer Risk Rating = **High**
+- Overall Customer Risk Tolerance = **20**
+
+So PEP customers are automatically categorized as high risk in this implementation.
+
+### Simple example
+
+If the 7 selected factors produce scores: `3, 2, 3, 2, 3, 2, 1`
+
+- Total Risk Score = `3+2+3+2+3+2+1 = 16`
+- System looks up score `16` in Risk Tolerance setup
+- The row for `16` decides the final category/rating and tolerance
+
+---
+
 ## A. Components involved in the calculation
 
 ## 1) UI screens and script
@@ -351,13 +395,13 @@ and $M$ is implemented as exact DB lookup in `Tbl_Mas_RiskTolerance` by key `Ris
 So for non-PEP:
 
 $$
-	ext{OverallCustomerRiskScore} = S
+  ext{OverallCustomerRiskScore} = S
 $$
 $$
-	ext{OverallCustomerRiskRating} = R
+  ext{OverallCustomerRiskRating} = R
 $$
 $$
-	ext{OverallCustomerRiskTolerance} = T
+  ext{OverallCustomerRiskTolerance} = T
 $$
 
 with $(R,T)=M(S)$.
@@ -365,17 +409,17 @@ with $(R,T)=M(S)$.
 If no mapping row exists for score $S$, fallback behavior is:
 
 $$
-	ext{OverallCustomerRiskScore}=0,\quad
-	ext{OverallCustomerRiskRating}=\varnothing,\quad
-	ext{OverallCustomerRiskTolerance}=\varnothing
+  ext{OverallCustomerRiskScore}=0,\quad
+  ext{OverallCustomerRiskRating}=\varnothing,\quad
+  ext{OverallCustomerRiskTolerance}=\varnothing
 $$
 
 For PEP override path:
 
 $$
-	ext{OverallCustomerRiskScore}=21,\quad
-	ext{OverallCustomerRiskRating}=\text{High},\quad
-	ext{OverallCustomerRiskTolerance}=20
+  ext{OverallCustomerRiskScore}=21,\quad
+  ext{OverallCustomerRiskRating}=\text{High},\quad
+  ext{OverallCustomerRiskTolerance}=20
 $$
 
 Piecewise final output can be written as:
