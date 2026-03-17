@@ -312,3 +312,78 @@ OverallCustomerRiskScore = 21
 OverallCustomerRiskRating = High
 OverallCustomerRiskTolerance = 20
 ```
+
+---
+
+## H. Mathematical formulation
+
+Let the seven factor scores be:
+
+- $s_1$ = LocationRiskScore
+- $s_2$ = TypeofproductRiskScore
+- $s_3$ = BusinessTypeRiskScore
+- $s_4$ = SourceoffundsRiskScore
+- $s_5$ = AnticipatedtransactionRiskScore
+- $s_6$ = CustomerTypeRiskScore
+- $s_7$ = PaymentModeRiskScore
+
+Then the non-PEP overall score is:
+
+$$
+S = \sum_{i=1}^{7} s_i = s_1+s_2+s_3+s_4+s_5+s_6+s_7
+$$
+
+Where in the script empty values are treated as zero before summation.
+
+Define risk tolerance master mapping function:
+
+$$
+M(S) = (R, T)
+$$
+
+such that:
+
+- $R$ = overall risk rating (Low / Medium / High etc.)
+- $T$ = risk tolerance percentage/value
+
+and $M$ is implemented as exact DB lookup in `Tbl_Mas_RiskTolerance` by key `RiskScore = S`.
+
+So for non-PEP:
+
+$$
+	ext{OverallCustomerRiskScore} = S
+$$
+$$
+	ext{OverallCustomerRiskRating} = R
+$$
+$$
+	ext{OverallCustomerRiskTolerance} = T
+$$
+
+with $(R,T)=M(S)$.
+
+If no mapping row exists for score $S$, fallback behavior is:
+
+$$
+	ext{OverallCustomerRiskScore}=0,\quad
+	ext{OverallCustomerRiskRating}=\varnothing,\quad
+	ext{OverallCustomerRiskTolerance}=\varnothing
+$$
+
+For PEP override path:
+
+$$
+	ext{OverallCustomerRiskScore}=21,\quad
+	ext{OverallCustomerRiskRating}=\text{High},\quad
+	ext{OverallCustomerRiskTolerance}=20
+$$
+
+Piecewise final output can be written as:
+
+$$
+(\text{Score},\text{Rating},\text{Tolerance})=
+\begin{cases}
+(21,\text{High},20), & \text{if PEP mode is enabled} \\
+(S,R,T), & \text{otherwise, where }(R,T)=M(S)
+\end{cases}
+$$
